@@ -1,0 +1,5 @@
+{
+  "name": "BAGIFY - AI TikTok Carousel Generator",
+  "description": "An AI-powered application that generates stunning, multi-frame TikTok-style carousels for luxury bags. Users upload reference images to define a character and scenes, select from a catalog of designer bags, and the app generates complete, downloadable carousels with new outfits and professional product shots.",
+  "requestFramePermissions": []
+}
