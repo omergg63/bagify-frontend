@@ -187,36 +187,13 @@ const generateWithDallE3 = async (
   }
 };
 
-// DALL-E 3 prompts for precise bag replacement
+// Shorter DALL-E 3 prompts (under 1000 characters)
 const getDallE3Frame1Prompt = (outfitVibe: string): string => `
-Edit this mirror selfie to replace the handbag with the specific target bag shown in the reference images.
-
-CRITICAL REQUIREMENTS:
-1. REMOVE the woman's current handbag completely
-2. REPLACE it with the exact target bag (match color, style, hardware, size)
-3. Keep the woman identical: same face, body, pose, hair, expression
-4. Keep the bathroom scene identical: same background, lighting, mirror
-5. Update her outfit to "${outfitVibe}" style while maintaining the same pose
-6. The new bag must be held naturally in her hands
-7. Ensure seamless integration with the scene's lighting and shadows
-
-Focus on precise object replacement - the target bag should be the ONLY bag visible in the final image.
+Edit this bathroom mirror selfie: Remove the woman's current handbag and replace it with the target bag shown in the reference. Keep the woman identical (face, body, pose, hair) and the bathroom scene unchanged. Update her outfit to "${outfitVibe}" style. The new bag must match the target exactly and be held naturally.
 `;
 
 const getDallE3Frame4Prompt = (outfitVibe: string): string => `
-Edit this bedroom mirror selfie to replace the handbag with the specific target bag, using a different pose.
-
-CRITICAL REQUIREMENTS:
-1. REMOVE the woman's current handbag completely  
-2. REPLACE it with the exact same target bag from Frame 1
-3. Keep the woman identical: same face, body, hair as Frame 1
-4. Keep the bedroom scene identical: same background, lighting, furniture
-5. CHANGE her pose to be noticeably different from Frame 1
-6. Update her outfit to a different "${outfitVibe}" style variation
-7. The target bag must be held naturally in her new pose
-8. Ensure the bag matches Frame 1 exactly (same color, style, hardware)
-
-Focus on precise object replacement with pose variation - the target bag should be the ONLY bag visible.
+Edit this bedroom mirror selfie: Remove the woman's current handbag and replace it with the same target bag from Frame 1. Keep the woman identical (face, body, hair) but change her pose. Keep the bedroom scene unchanged. Update her outfit to a different "${outfitVibe}" variation. The bag must match the target exactly.
 `;
 
 // Improved Gemini fallback prompts for bag replacement
