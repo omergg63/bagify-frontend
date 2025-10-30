@@ -134,8 +134,8 @@ const generateImageWithGemini = async (
     return imageBytes;
 };
 
-// Generate image using Backend (Imagen 3) for Frames 1 & 4
-const generateWithImagen3 = async (
+// Generate image using DALL-E 3 Backend for Frames 1 & 4
+const generateWithDallE3 = async (
   referenceImage: File,
   bagImage: File,
   prompt: string
@@ -143,7 +143,7 @@ const generateWithImagen3 = async (
   const backendUrl = `${import.meta.env.VITE_BACKEND_URL || 'https://bagify-backend.vercel.app'}/api/imagen3/generate`;
 
   try {
-    console.log(`🖼️ Calling Imagen 3 backend at ${backendUrl}...`);
+    console.log(`🖼️ Calling DALL-E 3 backend at ${backendUrl}...`);
 
     const [referenceImageBase64, bagImageBase64] = await Promise.all([
       fileToBase64(referenceImage),
@@ -177,54 +177,72 @@ const generateWithImagen3 = async (
       throw new Error(result.error || "Backend did not return a valid image.");
     }
     
-    console.log("✅ Imagen 3 generation successful from backend.");
+    console.log("✅ DALL-E 3 generation successful from backend.");
     return result.image;
 
   } catch (err) {
-    console.error("❌ Error calling Imagen 3 backend:", err);
-    const errorMessage = err instanceof Error ? err.message : "An unknown error occurred with the Imagen 3 backend.";
-    throw new Error(`Imagen 3 Generation Failed: ${errorMessage}`);
+    console.error("❌ Error calling DALL-E 3 backend:", err);
+    const errorMessage = err instanceof Error ? err.message : "An unknown error occurred with the DALL-E 3 backend.";
+    throw new Error(`DALL-E 3 Generation Failed: ${errorMessage}`);
   }
 };
 
-// Prompts for Imagen 3 (Frames 1 & 4)
-const getImagen3Frame1Prompt = (outfitVibe: string): string => `
-Photorealistic edit of a mirror selfie.
-The original image shows a woman in a bathroom.
-The second image provided is a target bag.
+// DALL-E 3 prompts for precise bag replacement
+const getDallE3Frame1Prompt = (outfitVibe: string): string => `
+Edit this mirror selfie to replace the handbag with the specific target bag shown in the reference images.
 
-**PRIMARY GOAL: Replace the bag in the woman's hands with the target bag. The new bag must be an EXACT, pixel-perfect copy of the target bag image.**
+CRITICAL REQUIREMENTS:
+1. REMOVE the woman's current handbag completely
+2. REPLACE it with the exact target bag (match color, style, hardware, size)
+3. Keep the woman identical: same face, body, pose, hair, expression
+4. Keep the bathroom scene identical: same background, lighting, mirror
+5. Update her outfit to "${outfitVibe}" style while maintaining the same pose
+6. The new bag must be held naturally in her hands
+7. Ensure seamless integration with the scene's lighting and shadows
 
-**SECONDARY GOAL: Change the woman's outfit to a new style: "${outfitVibe}".**
-
-**STRICT RULES - DO NOT CHANGE:**
-1.  **Woman:** Her face, body, skin tone, hair, pose, and hand positions must remain IDENTICAL to the original photo.
-2.  **Scene:** The bathroom background, including mirror, walls, lighting, and camera angle, must remain IDENTICAL.
-
-**EXECUTION DETAILS FOR BAG:**
--   **Clarity:** The replaced bag must be extremely sharp and clear, with all details like monograms, hardware, and texture perfectly visible and crisp, matching professional product photography.
--   **Integration:** The bag must be held naturally in her hands, perfectly integrated into the scene's lighting.
+Focus on precise object replacement - the target bag should be the ONLY bag visible in the final image.
 `;
 
-const getImagen3Frame4Prompt = (outfitVibe: string): string => `
-Photorealistic edit of a mirror selfie.
-The original image shows a woman in a bedroom.
-The second image provided is a target bag.
+const getDallE3Frame4Prompt = (outfitVibe: string): string => `
+Edit this bedroom mirror selfie to replace the handbag with the specific target bag, using a different pose.
 
-**GOAL: Create a new version with the same woman in a different pose, holding the SAME TARGET BAG.**
+CRITICAL REQUIREMENTS:
+1. REMOVE the woman's current handbag completely  
+2. REPLACE it with the exact same target bag from Frame 1
+3. Keep the woman identical: same face, body, hair as Frame 1
+4. Keep the bedroom scene identical: same background, lighting, furniture
+5. CHANGE her pose to be noticeably different from Frame 1
+6. Update her outfit to a different "${outfitVibe}" style variation
+7. The target bag must be held naturally in her new pose
+8. Ensure the bag matches Frame 1 exactly (same color, style, hardware)
 
-**STRICT RULES - DO NOT CHANGE:**
-1.  **Woman's Identity:** She must be IDENTICAL to the woman in Frame 1 (same face, hair, body, skin tone).
-2.  **Scene:** The bedroom background, including furniture, lighting, and camera angle, must remain IDENTICAL to the original bedroom photo.
-3.  **Bag:** The bag she holds must be an EXACT, pixel-perfect copy of the target bag image, and IDENTICAL to the bag generated in Frame 1.
+Focus on precise object replacement with pose variation - the target bag should be the ONLY bag visible.
+`;
 
-**STRICT RULES - THINGS TO CHANGE:**
-1.  **Pose:** The woman's pose must be NOTICEABLY DIFFERENT from her pose in Frame 1.
-2.  **Outfit:** Her outfit must be a DIFFERENT styling variation of the "${outfitVibe}" theme.
+// Improved Gemini fallback prompts for bag replacement
+const getGeminiFallbackFrame1Prompt = (outfitVibe: string): string => `
+Create a new version of this bathroom mirror selfie with these specific changes:
 
-**EXECUTION DETAILS FOR BAG:**
--   **Clarity & Consistency:** The bag must be extremely sharp and clear, just like in Frame 1. It must be recognizable as the exact same bag.
--   **Integration:** The bag must be held naturally in her new pose, integrated into the scene's lighting.
+REMOVE: The handbag currently being held by the woman
+ADD: The specific target handbag shown in the second image (match its exact color, style, and design)
+KEEP IDENTICAL: Woman's face, body, pose, hair, bathroom background, lighting, mirror
+CHANGE: Her outfit to "${outfitVibe}" style
+
+The woman should be holding ONLY the new target bag. No other bags should be visible.
+Generate a photorealistic result focusing on precise object replacement.
+`;
+
+const getGeminiFallbackFrame4Prompt = (outfitVibe: string): string => `
+Create a new bedroom mirror selfie based on these reference images:
+
+WOMAN: Use the same woman from the first image (identical face, body, hair)
+POSE: Create a different pose from the bathroom selfie
+OUTFIT: Style her in a different "${outfitVibe}" outfit variation  
+BAG: She must hold the exact target bag shown (same color, style, design as target)
+SCENE: Keep the bedroom background identical to the second reference image
+
+CRITICAL: She should hold ONLY the target bag. Remove any other bags from the scene.
+Generate a photorealistic result with natural lighting and pose.
 `;
 
 export const GenerationService = {
@@ -239,55 +257,70 @@ export const GenerationService = {
   ): Promise<string[]> {
     const frames: string[] = [];
     
-    // --- FRAME 1: Use Imagen 3 backend for highest quality ---
-    console.log("Generating Frame 1 with Imagen 3...");
+    // --- FRAME 1: Use DALL-E 3 backend for highest quality bag replacement ---
+    console.log("Generating Frame 1 with DALL-E 3...");
     try {
-      const frame1Prompt = getImagen3Frame1Prompt(outfitVibe);
-      const frame1Image = await generateWithImagen3(referenceImages.frame1, bagImage, frame1Prompt);
+      const frame1Prompt = getDallE3Frame1Prompt(outfitVibe);
+      const frame1Image = await generateWithDallE3(referenceImages.frame1, bagImage, frame1Prompt);
       frames.push(frame1Image);
-      console.log("✅ Frame 1 (Imagen 3) complete");
+      console.log("✅ Frame 1 (DALL-E 3) complete");
     } catch (error) {
-      console.error("❌ Frame 1 Imagen 3 failed, falling back to Gemini:", error);
-      // Fallback to Gemini if Imagen 3 fails
-      const fallbackPrompt = `Edit this mirror selfie by replacing the woman's bag with the target bag. Keep the woman identical (face, body, hair, pose). Keep the bathroom scene identical. Update her outfit to "${outfitVibe}" style.`;
+      console.error("❌ Frame 1 DALL-E 3 failed, falling back to Gemini:", error);
+      // Improved Gemini fallback with better bag replacement prompt
+      const fallbackPrompt = getGeminiFallbackFrame1Prompt(outfitVibe);
       const frame1Image = await generateImageWithGemini(fallbackPrompt, referenceImages.frame1, bagImage);
       frames.push(frame1Image);
       console.log("✅ Frame 1 (Gemini fallback) complete");
     }
 
-    // --- FRAME 2: Use Gemini for fast product shot ---
+    // --- FRAME 2: Use Gemini for product shot ---
     const frame2Prompt = `
       Professional luxury handbag product photography. 1080x1920px vertical.
-      CRITICAL: Generate a product shot of the exact bag shown in the uploaded image. Match the style, color, material, and details precisely.
-      Requirements: White/cream silk backdrop, angled 3/4 view (45-degree angle), bag occupies 50-60% of frame, professional studio lighting with soft shadows, no person, high quality, clean, minimalist.
+      
+      Create a professional product shot of the exact bag shown in the uploaded image:
+      - White/cream silk backdrop with soft texture
+      - 3/4 angled view (45-degree angle) showing bag's shape and details
+      - Professional studio lighting with soft shadows
+      - Bag occupies 50-60% of frame, centered
+      - High quality, clean, minimalist aesthetic
+      - No person or hands in shot
+      - Match the bag's color, material, hardware, and distinctive features exactly
     `;
     console.log("Generating Frame 2 with Gemini...");
     const frame2Image = await generateImageWithGemini(frame2Prompt, undefined, bagImage);
     frames.push(frame2Image);
     console.log("✅ Frame 2 (Gemini) complete");
 
-    // --- FRAME 3: Use Gemini for fast product shot ---
+    // --- FRAME 3: Use Gemini for product shot ---
     const frame3Prompt = `
       Professional luxury handbag product photography. 1080x1920px vertical.
-      CRITICAL: Generate a front-view product shot of the EXACT SAME bag as Frame 2. Use the uploaded bag image to ensure consistency.
-      Requirements: White/cream silk backdrop, straight-on front view, centered, bag occupies 50-60% of frame, professional studio lighting, even illumination, no person, high quality, clean, minimalist.
+      
+      Create a front-view product shot of the EXACT SAME bag as Frame 2:
+      - White/cream silk backdrop with soft texture  
+      - Straight-on front view, perfectly centered
+      - Professional studio lighting with even illumination
+      - Bag occupies 50-60% of frame
+      - High quality, clean, minimalist aesthetic
+      - No person or hands in shot
+      - Must be identical to the bag in the uploaded reference image
+      - Ensure consistency with Frame 2 styling
     `;
     console.log("Generating Frame 3 with Gemini...");
     const frame3Image = await generateImageWithGemini(frame3Prompt, undefined, bagImage);
     frames.push(frame3Image);
     console.log("✅ Frame 3 (Gemini) complete");
 
-    // --- FRAME 4: Use Imagen 3 backend for highest quality ---
-    console.log("Generating Frame 4 with Imagen 3...");
+    // --- FRAME 4: Use DALL-E 3 backend for highest quality bag replacement ---
+    console.log("Generating Frame 4 with DALL-E 3...");
     try {
-      const frame4Prompt = getImagen3Frame4Prompt(outfitVibe);
-      const frame4Image = await generateWithImagen3(referenceImages.frame4, bagImage, frame4Prompt);
+      const frame4Prompt = getDallE3Frame4Prompt(outfitVibe);
+      const frame4Image = await generateWithDallE3(referenceImages.frame4, bagImage, frame4Prompt);
       frames.push(frame4Image);
-      console.log("✅ Frame 4 (Imagen 3) complete");
+      console.log("✅ Frame 4 (DALL-E 3) complete");
     } catch (error) {
-      console.error("❌ Frame 4 Imagen 3 failed, falling back to Gemini:", error);
-      // Fallback to Gemini if Imagen 3 fails
-      const fallbackPrompt = `Create a bedroom mirror selfie with the same woman holding the same target bag. Same woman as Frame 1. Same bedroom background. DIFFERENT pose from Frame 1. Different "${outfitVibe}" outfit variation.`;
+      console.error("❌ Frame 4 DALL-E 3 failed, falling back to Gemini:", error);
+      // Improved Gemini fallback with better bag replacement prompt
+      const fallbackPrompt = getGeminiFallbackFrame4Prompt(outfitVibe);
       const frame4Image = await generateImageWithGemini(fallbackPrompt, referenceImages.frame4, bagImage);
       frames.push(frame4Image);
       console.log("✅ Frame 4 (Gemini fallback) complete");
