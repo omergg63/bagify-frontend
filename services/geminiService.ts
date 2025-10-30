@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { CharacterProfile, SceneProfile, Bag } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY as string });
 
 // Helper to convert File to base64 string
 const fileToBase64 = (file: File): Promise<string> => {
